@@ -256,11 +256,14 @@
     font-family: var(--font-mono);
   }
 
-  /* ---------- Main grid ---------- */
-  .main-grid {
+  /* ---------- Layout: paneles apilados ---------- */
+  .panel-block { margin-bottom: 16px; }
+
+  .charts-grid {
     display: grid;
-    grid-template-columns: 360px 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
+    margin-bottom: 16px;
     align-items: start;
   }
 
@@ -359,6 +362,83 @@
     color: var(--text-muted);
     text-align: center;
     padding: 30px 10px;
+  }
+
+  /* ---------- Comparativo por fecha ---------- */
+  .date-highlight {
+    margin: 16px 18px 4px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .date-highlight svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+  .date-highlight .dh-label { font-size: 12.5px; color: var(--accent); font-weight: 600; }
+  .date-highlight .dh-fecha { font-family: var(--font-mono); font-weight: 600; font-size: 13px; }
+  .date-highlight .dh-value {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    margin-left: auto;
+    font-weight: 600;
+  }
+
+  .date-list {
+    padding: 6px 18px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .date-row {
+    display: grid;
+    grid-template-columns: 84px 1fr 100px;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 4px;
+    border-radius: 8px;
+  }
+  .date-row:hover { background: var(--surface-2); }
+
+  .date-row .date-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .date-row.top .date-label { color: var(--accent); font-weight: 700; }
+
+  .date-bar-track {
+    background: var(--surface-2);
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+  }
+
+  .date-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: var(--primary);
+    transition: width 0.4s ease;
+  }
+
+  .date-row.top .date-bar-fill { background: var(--accent); }
+
+  .date-row .date-value {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .date-note {
+    padding: 0 18px 16px;
+    font-size: 11.5px;
+    color: var(--text-muted);
   }
 
   /* ---------- Filters ---------- */
@@ -503,9 +583,10 @@
   }
 
   @media (max-width: 860px) {
-    .main-grid { grid-template-columns: 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
     .kpi-grid { grid-template-columns: 1fr; }
     thead th, tbody td { padding: 10px 12px; }
+    .date-row { grid-template-columns: 66px 1fr 84px; gap: 8px; }
   }
 
   :focus-visible {
@@ -587,7 +668,26 @@
     </div>
   </div>
 
-  <div class="main-grid">
+  <div class="panel panel-block" id="datePanel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Ventas por fecha</div>
+        <div class="panel-title-sub">suma de Monto por día, según filtros activos</div>
+      </div>
+    </div>
+    <div class="date-highlight" id="dateHighlight" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+      </svg>
+      <span class="dh-label">Mejor día:</span>
+      <span class="dh-fecha" id="dhFecha"></span>
+      <span class="dh-value" id="dhValor"></span>
+    </div>
+    <div class="date-list" id="dateList"></div>
+    <div class="date-note" id="dateNote"></div>
+  </div>
+
+  <div class="charts-grid">
 
     <div class="panel">
       <div class="panel-header">
@@ -596,14 +696,29 @@
           <div class="panel-title-sub">% del monto total filtrado</div>
         </div>
       </div>
-      <div class="chart-body" id="chartBody">
-        <div class="donut-svg-wrap" id="donutWrap"></div>
-        <div class="legend" id="legend"></div>
+      <div class="chart-body">
+        <div class="donut-svg-wrap" id="donutWrapProducto"></div>
+        <div class="legend" id="legendProducto"></div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="filters">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Distribución por región</div>
+          <div class="panel-title-sub">% del monto total filtrado</div>
+        </div>
+      </div>
+      <div class="chart-body">
+        <div class="donut-svg-wrap" id="donutWrapRegion"></div>
+        <div class="legend" id="legendRegion"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel">
+    <div class="filters">
         <div class="search-box">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -630,8 +745,6 @@
       </div>
       <div class="table-footer" id="tableFooter">0 registros</div>
     </div>
-
-  </div>
 
   <footer class="page-footer">Panel de ventas · datos publicados desde Google Sheets</footer>
 </div>
@@ -888,10 +1001,13 @@
       conteo === state.ventas.length ? "todas las filas" : `de ${state.ventas.length} filas totales`;
   }
 
-  /* ================= Render: gráfico de dona (SVG puro) ================= */
-  function renderDonut(filtradas) {
-    const wrap = document.getElementById("donutWrap");
-    const legend = document.getElementById("legend");
+  /* ================= Render: gráfico de dona (SVG puro) =================
+     Función genérica y reutilizable: recibe los ids del contenedor SVG y
+     de la leyenda, el arreglo ya filtrado, y una función que decide por
+     qué campo agrupar (producto, región, etc.). */
+  function renderDonut(wrapId, legendId, filtradas, groupFn) {
+    const wrap = document.getElementById(wrapId);
+    const legend = document.getElementById(legendId);
     wrap.innerHTML = "";
     legend.innerHTML = "";
 
@@ -900,13 +1016,13 @@
       return;
     }
 
-    const porProducto = {};
+    const porGrupo = {};
     filtradas.forEach((v) => {
-      const key = v.producto || "Sin producto";
-      porProducto[key] = (porProducto[key] || 0) + (Number(v.monto) || 0);
+      const key = groupFn(v) || "Sin dato";
+      porGrupo[key] = (porGrupo[key] || 0) + (Number(v.monto) || 0);
     });
 
-    let entradas = Object.entries(porProducto).sort((a, b) => b[1] - a[1]);
+    let entradas = Object.entries(porGrupo).sort((a, b) => b[1] - a[1]);
 
     if (entradas.length > 7) {
       const top = entradas.slice(0, 6);
@@ -979,6 +1095,58 @@
     wrap.appendChild(center);
   }
 
+  /* ================= Render: comparativo de ventas por fecha ================= */
+  function renderFechaComparativo(filtradas) {
+    const highlight = document.getElementById("dateHighlight");
+    const dhFecha = document.getElementById("dhFecha");
+    const dhValor = document.getElementById("dhValor");
+    const list = document.getElementById("dateList");
+    const note = document.getElementById("dateNote");
+
+    list.innerHTML = "";
+    note.textContent = "";
+
+    if (filtradas.length === 0) {
+      highlight.style.display = "none";
+      list.innerHTML = '<div class="empty-note">Sin datos para comparar.</div>';
+      return;
+    }
+
+    const porFecha = {};
+    filtradas.forEach((v) => {
+      const key = v.fecha || "Sin fecha";
+      porFecha[key] = (porFecha[key] || 0) + (Number(v.monto) || 0);
+    });
+
+    const entradas = Object.entries(porFecha).sort((a, b) => b[1] - a[1]);
+
+    const [mejorFecha, mejorValor] = entradas[0];
+    highlight.style.display = "flex";
+    dhFecha.textContent = formatFecha(mejorFecha);
+    dhValor.textContent = formatMonto(mejorValor);
+
+    const LIMITE = 10;
+    const totalFechas = entradas.length;
+    const visibles = entradas.slice(0, LIMITE);
+    const maxValor = visibles[0][1];
+
+    visibles.forEach((entrada, i) => {
+      const [fecha, valor] = entrada;
+      const pct = maxValor > 0 ? (valor / maxValor) * 100 : 0;
+      const row = document.createElement("div");
+      row.className = "date-row" + (i === 0 ? " top" : "");
+      row.innerHTML =
+        `<span class="date-label">${formatFecha(fecha)}</span>` +
+        `<span class="date-bar-track"><span class="date-bar-fill" style="width:${pct.toFixed(1)}%"></span></span>` +
+        `<span class="date-value">${formatMonto(valor)}</span>`;
+      list.appendChild(row);
+    });
+
+    if (totalFechas > LIMITE) {
+      note.textContent = `Mostrando los ${LIMITE} días con mayor venta, de ${totalFechas} días distintos en el filtro actual.`;
+    }
+  }
+
   /* ================= Render: tabla ================= */
   function renderTabla(filtradas) {
     const tbody = document.getElementById("tableBody");
@@ -1018,7 +1186,9 @@
   function renderAll() {
     const filtradas = getFiltradas();
     renderKPIs(filtradas);
-    renderDonut(filtradas);
+    renderFechaComparativo(filtradas);
+    renderDonut("donutWrapProducto", "legendProducto", filtradas, (v) => v.producto || "Sin producto");
+    renderDonut("donutWrapRegion", "legendRegion", filtradas, (v) => v.region || "Sin región");
     renderTabla(filtradas);
   }
 
